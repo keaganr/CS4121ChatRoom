@@ -10,7 +10,7 @@ extern crate mysql;
 extern crate time;
 
 // Includes
-// use time::Timespec;
+use time::Timespec;
 use mysql::conn::{MyOpts};
 use mysql::conn::pool::{MyPool};
 // use mysql::value::{from_value};
@@ -21,6 +21,14 @@ struct User {
 	username: String,
 	password: String
 }
+
+// Basic structure representing a message
+pub struct Message {
+	pub userid: int,
+	pub message: String,
+	pub time_sent: Timespec
+}
+
 
 /**
 * Initializes the db connection 
@@ -36,6 +44,7 @@ pub fn init_db_conn() -> mysql::conn::pool::MyPool {
 	println!("connected to database");
 	return pool;
 }
+
 
 /**
 * Attempts to authenticate user credentials against database entries
@@ -61,17 +70,19 @@ pub fn authenticate(pool: mysql::conn::pool::MyPool, username: String, password:
 	return found_flag;
 }
 
+
 /**
 * Creates a new user entry in the database with given credentials
 */
 #[allow(unused_must_use)]
-pub fn add_user(username: String, password: String) {
-	let pool = init_db_conn();
+pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: String) {
 
 	let new_user = User {
 		username: username,
 		password: password
 	};
+
+	// TODO: don't allow duplicate usernames
 
 	pool.prepare("INSERT INTO user VALUES (null, ?, ?);")
 	.and_then(|mut stmt| {
@@ -79,4 +90,63 @@ pub fn add_user(username: String, password: String) {
 	});
 
 }
+
+
+/**
+ * Log a message to the database
+ */
+pub fn store_message(pool: mysql::conn::pool::MyPool, new_message: Message) {
+	println!("Message: {}", new_message.message);
+
+	pool.prepare("INSERT INTO messages VALUES(null, ?, ?, null);")
+	.and_then(|mut stmt| {
+		stmt.execute(&[&new_message.userid, &new_message.message]).and(Ok(()))
+	});
+}
+
+/**
+ * Get userid from username
+ */
+ pub fn get_uid(pool: mysql::conn::pool::MyPool, username: String) {
+
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
