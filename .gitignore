@@ -1,0 +1,5 @@
+/target
+
+src/old_main_backup
+src/libmysql_connector.rlib
+Cargo.lock

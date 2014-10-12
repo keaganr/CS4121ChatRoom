@@ -1,0 +1,12 @@
+[package]
+
+name = "ChatRoom"
+version = "0.0.1"
+authors = ["keaganr <keaganr@gmail.com>"]
+
+[dependencies.mysql]
+git = "https://github.com/blackbeam/rust-mysql-simple.git"
+
+[lib]
+name = "mysql_connector"
+path = "src/mysql_connector.rs"
