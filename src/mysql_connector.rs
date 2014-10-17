@@ -13,14 +13,16 @@ extern crate time;
 use time::Timespec;
 use mysql::conn::{MyOpts};
 use mysql::conn::pool::{MyPool};
-// use mysql::value::{from_value};
+use mysql::value::{from_value};
 use std::default::{Default};
+
 
 // Basic structure representing a single user
 struct User {
 	username: String,
 	password: String
 }
+
 
 // Basic structure representing a message
 pub struct Message {
@@ -95,19 +97,59 @@ pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: Str
 /**
  * Log a message to the database
  */
-pub fn store_message(pool: mysql::conn::pool::MyPool, new_message: Message) {
-	println!("Message: {}", new_message.message);
+ pub fn store_message(pool: mysql::conn::pool::MyPool, new_message: Message) {
+ 	println!("Message: {}", new_message.message);
 
-	pool.prepare("INSERT INTO messages VALUES(null, ?, ?, null);")
-	.and_then(|mut stmt| {
-		stmt.execute(&[&new_message.userid, &new_message.message]).and(Ok(()))
-	});
-}
+ 	pool.prepare("INSERT INTO messages VALUES(null, ?, ?, null);")
+ 	.and_then(|mut stmt| {
+ 		stmt.execute(&[&new_message.userid, &new_message.message]).and(Ok(()))
+ 	});
+ }
 
 /**
  * Get userid from username
  */
- pub fn get_uid(pool: mysql::conn::pool::MyPool, username: String) {
+ pub fn get_uid(pool: mysql::conn::pool::MyPool, username: String)  -> int {
+
+ 	// create sql statement
+ 	let statement = "SELECT * FROM user WHERE username='".to_string() + username + "';".to_string();
+
+ 	// execute and parse through query to find matching uid
+ 	let mut found_id : int = 0;
+ 	let _ = pool.prepare(statement.as_slice()) 
+ 	.and_then(|mut stmt| {
+ 		for row in &mut stmt.execute([]) {
+ 			let row = row.unwrap();
+ 			found_id = from_value(&row[0]);
+ 			println!("uid = {}", found_id);
+ 		}
+ 		Ok(())
+ 	});
+ 	return found_id;
+ }
+
+ /**
+  * Get $count number of latest messages
+  */
+  pub fn get_recent_messages(pool: mysql::conn::pool::MyPool, count: int) {
+  	//select * from messages order by time limit 3;
+
+ 	// create sql statement
+ 	let statement = "SELECT * FROM messages ORDER BY time LIMIT ".to_string() + count.to_string() + ";".to_string();
+ 	println!("created statment = {}", statement);
+
+ 	// execute and parse through query to find matching uid
+ 	// let mut found_id : int = 0;
+ 	// let _ = pool.prepare(statement.as_slice())
+ 	// .and_then(|mut stmt| {
+ 	// 	for row in &mut stmt.execute([]) {
+ 	// 		let row = row.unwrap();
+ 	// 		found_id = from_value(&row[0]);
+ 	// 		println!("uid = {}", found_id);
+ 	// 	}
+ 	// 	Ok(())
+ 	// });
+ 	// return found_id;
 
  }
 
