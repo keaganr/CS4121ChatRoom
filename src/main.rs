@@ -32,7 +32,7 @@ fn main() {
 
 	// mysql_connector::store_message(pool.clone(), msg);
 
-	let msg_vec : Vec<mysql_connector::Message> = mysql_connector::get_recent_messages(pool.clone(), 4);
+	let msg_vec : Vec<mysql_connector::Message> = mysql_connector::get_recent_messages(pool.clone(), 40);
 	for msg in msg_vec.iter() {
 		println!("msg = {}", msg.userid);
 	}

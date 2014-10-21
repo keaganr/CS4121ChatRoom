@@ -16,6 +16,8 @@ use mysql::conn::pool::{MyPool};
 use mysql::value::{from_value};
 use std::default::{Default};
 
+use std::vec;
+
 
 // Basic structure representing a single user
 struct User {
@@ -131,26 +133,32 @@ pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: Str
  /**
   * Get $count number of latest messages
   */
-  pub fn get_recent_messages(pool: mysql::conn::pool::MyPool, count: int) {
+  pub fn get_recent_messages(pool: mysql::conn::pool::MyPool, count: int) -> Vec<Message> {
   	//select * from messages order by time limit 3;
 
  	// create sql statement
  	let statement = "SELECT * FROM messages ORDER BY time LIMIT ".to_string() + count.to_string() + ";".to_string();
- 	println!("created statment = {}", statement);
 
- 	// execute and parse through query to find matching uid
- 	// let mut found_id : int = 0;
- 	// let _ = pool.prepare(statement.as_slice())
- 	// .and_then(|mut stmt| {
- 	// 	for row in &mut stmt.execute([]) {
- 	// 		let row = row.unwrap();
- 	// 		found_id = from_value(&row[0]);
- 	// 		println!("uid = {}", found_id);
- 	// 	}
- 	// 	Ok(())
- 	// });
- 	// return found_id;
+ 	// build list of messages
+ 	let mut msg_vec : Vec<Message> = Vec::new();
+ 	let _ = pool.prepare(statement.as_slice())
+ 	.and_then(|mut stmt| {
+ 		for row in &mut stmt.execute([]) {
+ 			let row = row.unwrap();
 
+ 			// create individual message
+ 			let mut new_message = Message {
+ 				userid: from_value(&row[1]),
+ 				message: from_value(&row[2]),
+ 				time_sent: from_value(&row[3])
+ 			};
+ 			msg_vec.push(new_message);
+ 		}
+ 		Ok(())
+ 	});
+
+ 	// return message vector (list)
+ 	return msg_vec;
  }
 
 
