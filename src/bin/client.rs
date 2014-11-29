@@ -7,15 +7,20 @@ fn main() {
 	let mut stream = TcpStream::connect("127.0.0.1", 8080).unwrap();
 	let mut reader = io::stdin();
 
-	// get username and password on start
+	// get username and password on start, the calls to pop remove the return character
 	println!("Enter username: ");
-	let user = reader.read_line().ok().expect("Failed to read line.");
+	let mut user = reader.read_line().ok().expect("Failed to read line.");
+	user.pop();
 	println!("Enter password: ");
-	let pass = reader.read_line().ok().expect("Failed to read line.");
+	let mut pass = reader.read_line().ok().expect("Failed to read line.");
+	pass.pop();
 
 	// create message string to pass to the server as bytes
-	let message = String::from_str("1").append(user.len().to_string().as_slice())
-					.append(user.as_slice()).append(pass.len().to_string().as_slice()).append(pass.as_slice());
+	let message = String::from_str("1")
+					.append(String::from_char(1, (user.len() as u8) as char).as_slice())
+					.append(user.as_slice())
+					.append(String::from_char(1, (pass.len() as u8) as char).as_slice())
+					.append(pass.as_slice());
 	let bytes = message.into_bytes();
 	let mut buf = [1u8];
 
