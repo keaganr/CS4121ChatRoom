@@ -9,14 +9,16 @@ fn main() {
 	let mut stream = TcpStream::connect("127.0.0.1:8080").unwrap();
 	let mut reader = io::stdin();
 	let mut buf = [1u8];
+	let mut test = 'a';
 
 	// get username and password on start, the calls to pop remove the return character
 	print!("Enter username: ");
 	let mut user = reader.read_line().ok().expect("Failed to read line.");
-	while user.pop().unwrap() != 13 as char {}
+	loop {test = user.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
+
 	print!("Enter password: ");
 	let mut pass = reader.read_line().ok().expect("Failed to read line.");
-	while pass.pop().unwrap() != 13 as char {}
+	loop {test = pass.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
 
 	// create message string to pass to the server as bytes
 	let mut message = String::from_str("1");
@@ -44,7 +46,7 @@ fn main() {
 
     		// get user input
     		input = reader.read_line().ok().expect("Failed to read line.");
-    		while input.pop().unwrap() != 13 as char {}
+    		loop {test = input.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
 
     		// if user input is "exit" then exit both the client and server process
     		if (input.as_slice() == "exit") {
