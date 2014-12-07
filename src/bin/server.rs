@@ -1,6 +1,7 @@
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::str;
 
+
 fn main() {
 
 	// create listener and bind it
@@ -28,20 +29,44 @@ fn main() {
 fn handle_client(mut stream: TcpStream) {
 
     let mut buf = [1u8];
+    let mut user = "".to_string();
 
-    // read op code and print it
+
+    // read op code
     stream.read(buf);
-    let op = String::from_byte(buf[0]);
+    let mut op = String::from_byte(buf[0]);
 
-    if op.as_slice() == "1" { login(stream); }
-    else if op.as_slice() == "2" { send_all(); }
-    else if op.as_slice() == "3" { send_hist(); }
-    else if op.as_slice() == "4" { announce(); }
-    //println!("{}", op);
+    // loop for client operations
+    while op.as_slice() != "0" {
+	    if op.as_slice() == "1" {
+	    	user = login(stream.clone());
+	    	if user.as_slice() != "" { 
+	    		write_message(String::from_str("1"), stream.clone());
+	    	}
+	    	else {
+	    		write_message(String::from_str("2"), stream.clone());
+	    		break;
+	    	}
+	    }
+	    else if op.as_slice() == "2" { send_all(); }
+	    else if op.as_slice() == "3" { send_hist(); }
+	    else if op.as_slice() == "4" { announce(); }
+	    else { fail!("invalid op code"); }
+
+	    // read op code again
+    	stream.read(buf);
+    	let mut op = String::from_byte(buf[0]);
+	}
+
+    drop(stream);
+    println!("exiting client task");
 }
 
 // SOP1: login
-fn login(mut stream: TcpStream) {
+// reads in user credentials and returns true if they can be accepted
+// and false if they cannot
+fn login(mut stream: TcpStream) -> String {
+
 	let mut buf = [1u8];
 	let mut user = "".to_string();
 	let mut pass = "".to_string();
@@ -61,6 +86,15 @@ fn login(mut stream: TcpStream) {
 	}
 
 	println!("start login, username: {} password: {}", user, pass);
+
+	// test if user and pass are correct, if they are the user is returned,
+	// if they aren't an empty string is returned
+	if user.as_slice() == "user" && pass.as_slice() == "pass" { 
+		println!("acceptable credentials");
+		return user;
+
+	}
+	else {println!("failure!!!"); return "".to_string();}
 }
 
 // SOP2: send_all
@@ -76,4 +110,16 @@ fn send_hist() {
 // SOP4: announce
 fn announce() {
 	println!("start announce");
+}
+
+// function to pass a string message into a stream byte by byte
+fn write_message(message : String, mut stream: TcpStream) {
+	let bytes = message.into_bytes();
+	let mut buf = [1u8];
+
+	// pass message to server
+	for n in range(0u, bytes.len()) {
+		buf[0] = bytes[n];
+		stream.write(&buf);
+	}
 }
