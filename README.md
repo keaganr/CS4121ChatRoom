@@ -8,10 +8,11 @@ rough framework for operations:
 	outgoing:
 
 		client:
-		COP1	login
-		COP2	send message
+		COP1	login accepted
+		COP2	login rejected
 
 		server:
+		SOP0	exit
 		SOP1	accept/reject login
 		SOP2	send message to all
 		SOP3	send history

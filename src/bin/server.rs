@@ -48,14 +48,14 @@ fn handle_client(mut stream: TcpStream) {
 	    		break;
 	    	}
 	    }
-	    else if op.as_slice() == "2" { send_all(); }
+	    else if op.as_slice() == "2" { send_all(user.clone(), stream.clone()); }
 	    else if op.as_slice() == "3" { send_hist(); }
 	    else if op.as_slice() == "4" { announce(); }
 	    else { fail!("invalid op code"); }
 
-	    // read op code again
+	    // read new op code
     	stream.read(buf);
-    	let mut op = String::from_byte(buf[0]);
+    	op = String::from_byte(buf[0]);
 	}
 
     drop(stream);
@@ -98,8 +98,20 @@ fn login(mut stream: TcpStream) -> String {
 }
 
 // SOP2: send_all
-fn send_all() {
-	println!("start send all");
+fn send_all(user: String, mut stream: TcpStream) {
+	let mut buf = [1u8];
+	let mut text = "".to_string();
+
+	stream.read(buf);
+	for n in range(0u, buf[0] as uint) {
+		stream.read(buf);
+		text = text.append(String::from_byte(buf[0]).as_slice());
+	}
+
+	println!("got text: {}", text);
+
+	//TODO: implement sending received message to all clients
+	
 }
 
 // SOP3: send_hist

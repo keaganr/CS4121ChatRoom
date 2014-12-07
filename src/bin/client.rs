@@ -31,12 +31,31 @@ fn main() {
     stream.read(buf);
     let mut op = String::from_byte(buf[0]);
 
+    println!("op code: {}", op.as_slice());
+
     // if op code is 1 login is successful and the client is moved on to the message loop
     if op.as_slice() == "1" {
-    	println!("Welcome to the chatroom");
+    	println!("Welcome to the chatroom!\nThere is a 255 character limit on messages and you can type enter 'exit' to exit the application.");
+
+    	let mut input = "".to_string();
 
     	//TODO: currently just an infinite loop for the message loop
-    	loop {}
+    	loop { 
+    		input = reader.read_line().ok().expect("Failed to read line.");
+    		input.pop();
+    		if (input.as_slice() == "exit") {
+    			println!("leaving");
+    			message = String::from_str("0");
+    			write_message(message, stream.clone());
+    			break;
+    		}
+    		else {
+    			message = String::from_str("2")
+    					.append(String::from_char(1, (input.len() as u8) as char).as_slice())
+    					.append(input.as_slice());
+    			write_message(message, stream.clone());
+    		}
+    	}
 
     	drop(stream);
     }
