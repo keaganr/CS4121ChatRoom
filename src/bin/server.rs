@@ -1,4 +1,5 @@
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
+use std::io;
 use std::str;
 
 
@@ -8,21 +9,34 @@ fn main() {
 	let listener = TcpListener::bind("127.0.0.1:8080");
 
 	// start listen
-	let mut acceptor = listener.listen();
-
-	// accept connections and spawn tasks for each
-	for stream in acceptor.incoming() {
-	    match stream {
-	        Err(e) => { /* connection failed */ }
-	        Ok(stream) => spawn(proc() {
-	        	println!("got client");
-	            handle_client(stream);
-	        })
-	    }
+	let mut acceptor = listener.listen().unwrap();
+	
+	let mut acceptor_clone = acceptor.clone();
+	spawn(proc() {
+		// accept connections and spawn tasks for each
+		for stream in acceptor_clone.incoming() {
+			match stream {
+				Err(e) => { 
+					println!("server stopping"); 
+					break; 
+				}
+				Ok(stream) => spawn(proc() {
+					println!("got client");
+					handle_client(stream);
+				})
+			}
+		}
+	});
+	
+	let mut line = io::stdin().read_line().ok().unwrap();
+	while line.pop().unwrap() != 13 as char {}
+	while line.to_string() != "exit".to_string() {
+		line = io::stdin().read_line().ok().unwrap();
+		while line.pop().unwrap() != 13 as char {}
 	}
-
+	
 	// close the socket server
-	drop(acceptor);
+	acceptor.close_accept();
 }
 
 // handle the spawned client task

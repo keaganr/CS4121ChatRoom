@@ -11,12 +11,12 @@ fn main() {
 	let mut buf = [1u8];
 
 	// get username and password on start, the calls to pop remove the return character
-	println!("Enter username: ");
+	print!("Enter username: ");
 	let mut user = reader.read_line().ok().expect("Failed to read line.");
-	user.pop();
-	println!("Enter password: ");
+	while user.pop().unwrap() != 13 as char {}
+	print!("Enter password: ");
 	let mut pass = reader.read_line().ok().expect("Failed to read line.");
-	pass.pop();
+	while pass.pop().unwrap() != 13 as char {}
 
 	// create message string to pass to the server as bytes
 	let mut message = String::from_str("1");
@@ -44,7 +44,7 @@ fn main() {
 
     		// get user input
     		input = reader.read_line().ok().expect("Failed to read line.");
-    		input.pop();
+    		while input.pop().unwrap() != 13 as char {}
 
     		// if user input is "exit" then exit both the client and server process
     		if (input.as_slice() == "exit") {
