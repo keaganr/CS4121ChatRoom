@@ -29,14 +29,26 @@ fn main() {
 	});
 	
 	let mut line = io::stdin().read_line().ok().unwrap();
-	while line.pop().unwrap() != 13 as char {}
+	line = remove_end_newline_char(line);
 	while line.to_string() != "exit".to_string() {
 		line = io::stdin().read_line().ok().unwrap();
-		while line.pop().unwrap() != 13 as char {}
+		line = remove_end_newline_char(line);
 	}
 	
 	// close the socket server
 	acceptor.close_accept();
+	
+	//TODO: send exit message to all clients
+}
+
+fn remove_end_newline_char(message : String) -> String {
+	let mut new_message = message.to_string();
+	let mut last_char = new_message.pop().unwrap();
+	while last_char == 13 as char || last_char == 10 as char {
+		last_char = new_message.pop().unwrap();
+	}
+	new_message.push_str(String::from_char(1, last_char).as_slice());
+	return new_message;
 }
 
 // handle the spawned client task

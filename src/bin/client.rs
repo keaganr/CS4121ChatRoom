@@ -11,14 +11,15 @@ fn main() {
 	let mut buf = [1u8];
 	let mut test = 'a';
 
-	// get username and password on start, the calls to pop remove the return character
+	
+	// get username and password on start
 	print!("Enter username: ");
 	let mut user = reader.read_line().ok().expect("Failed to read line.");
-	loop {test = user.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
+	user = remove_end_newline_char(user);
 
 	print!("Enter password: ");
 	let mut pass = reader.read_line().ok().expect("Failed to read line.");
-	loop {test = pass.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
+	pass = remove_end_newline_char(pass);
 
 	// create message string to pass to the server as bytes
 	let mut message = String::from_str("1");
@@ -46,8 +47,8 @@ fn main() {
 
     		// get user input
     		input = reader.read_line().ok().expect("Failed to read line.");
-    		loop {test = input.pop().unwrap(); if test != 13 as char || test != 10 as char { test = 'a'; break; }}
-
+			input = remove_end_newline_char(input);
+			
     		// if user input is "exit" then exit both the client and server process
     		if (input.as_slice() == "exit") {
     			println!("leaving");
@@ -85,4 +86,14 @@ fn write_message(message : String, mut stream: TcpStream) {
 		buf[0] = bytes[n];
 		stream.write(&buf);
 	}
+}
+
+fn remove_end_newline_char(message : String) -> String {
+	let mut new_message = message.to_string();
+	let mut last_char = new_message.pop().unwrap();
+	while last_char == 13 as char || last_char == 10 as char {
+		last_char = new_message.pop().unwrap();
+	}
+	new_message.push_str(String::from_char(1, last_char).as_slice());
+	return new_message;
 }
