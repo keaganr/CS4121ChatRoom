@@ -5,7 +5,7 @@ use std::str;
 fn main() {
 
 	// create listener and bind it
-	let listener = TcpListener::bind("127.0.0.1", 8080);
+	let listener = TcpListener::bind("127.0.0.1:8080");
 
 	// start listen
 	let mut acceptor = listener.listen();
@@ -33,12 +33,15 @@ fn handle_client(mut stream: TcpStream) {
 
 
     // read op code
-    stream.read(buf);
-    let mut op = String::from_byte(buf[0]);
+    stream.read(&mut buf);
+    
+    let mut op = buf[0] as char;
+
+    println!("op code: {}", op);
 
     // loop for client operations
-    while op.as_slice() != "0" {
-	    if op.as_slice() == "1" {
+    while op != '0' {
+	    if op == '1' {
 	    	user = login(stream.clone());
 	    	if user.as_slice() != "" { 
 	    		write_message(String::from_str("1"), stream.clone());
@@ -48,14 +51,14 @@ fn handle_client(mut stream: TcpStream) {
 	    		break;
 	    	}
 	    }
-	    else if op.as_slice() == "2" { send_all(user.clone(), stream.clone()); }
-	    else if op.as_slice() == "3" { send_hist(); }
-	    else if op.as_slice() == "4" { announce(); }
-	    else { fail!("invalid op code"); }
+	    else if op == '2' { send_all(user.clone(), stream.clone()); }
+	    else if op == '3' { send_hist(); }
+	    else if op == '4' { announce(); }
+	    else { println!("invalid op code"); break; }
 
 	    // read new op code
-    	stream.read(buf);
-    	op = String::from_byte(buf[0]);
+    	stream.read(&mut buf);
+    	op = buf[0] as char;
 	}
 
     drop(stream);
@@ -72,17 +75,17 @@ fn login(mut stream: TcpStream) -> String {
 	let mut pass = "".to_string();
 
 	// get the username length and read it into the user variable
-	stream.read(buf);
+	stream.read(&mut buf);
 	for n in range(0u, buf[0] as uint) {
-		stream.read(buf);
-		user = user.append(String::from_byte(buf[0]).as_slice());
+		stream.read(&mut buf);
+		user.push(buf[0] as char);
 	}
 
 	// get the password length and read it into the pass variable
-	stream.read(buf);
+	stream.read(&mut buf);
 	for n in range(0u, buf[0] as uint) {
-		stream.read(buf);
-		pass = pass.append(String::from_byte(buf[0]).as_slice());
+		stream.read(&mut buf);
+		pass.push(buf[0] as char);
 	}
 
 	println!("start login, username: {} password: {}", user, pass);
@@ -102,10 +105,10 @@ fn send_all(user: String, mut stream: TcpStream) {
 	let mut buf = [1u8];
 	let mut text = "".to_string();
 
-	stream.read(buf);
+	stream.read(&mut buf);
 	for n in range(0u, buf[0] as uint) {
-		stream.read(buf);
-		text = text.append(String::from_byte(buf[0]).as_slice());
+		stream.read(&mut buf);
+		text.push(buf[0] as char);
 	}
 
 	println!("got text: {}", text);
