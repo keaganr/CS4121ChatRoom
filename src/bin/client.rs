@@ -30,43 +30,83 @@ fn main() {
 	
 	write_message(message, stream.clone());
 
-	// read op code for login
+	// read op code
     stream.read(&mut buf);
     let mut op = buf[0] as char;
+
+    // if the op code is '3' remove message from stream and check the op code again
+    while op == '3' {
+    	stream.read(&mut buf);
+		for n in range(0u, buf[0] as uint) { stream.read(&mut buf); }
+    	stream.read(&mut buf);
+    	let mut op = buf[0] as char;
+    }
 
     println!("op code: {}", op);
 
     // if op code is 1 login is successful and the client is moved on to the message loop
     if op == '1' {
-    	println!("Welcome to the chatroom!\nThere is a 255 character limit on messages and you can type enter 'exit' to exit the application.");
 
-    	let mut input = "".to_string();
+    	// clone stream for use in input and output loop
+    	let mut inputStream = stream.clone();
+    	let mut outputStream = stream.clone();
 
-    	// user input loop
-    	loop { 
+    	// spawn input loop
+    	spawn(proc() {
+    		let mut message = "".to_string();
+	    	println!("Welcome to the chatroom!\nThere is a 255 character limit on messages and you can type enter 'exit' to exit the application.");
 
-    		// get user input
-    		input = reader.read_line().ok().expect("Failed to read line.");
-			input = remove_end_newline_char(input);
-			
-    		// if user input is "exit" then exit both the client and server process
-    		if (input.as_slice() == "exit") {
-    			println!("leaving");
-    			message = String::from_str("0");
-    			write_message(message, stream.clone());
-    			break;
-    		}
+	    	let mut input = "".to_string();
 
-    		// else send a message to the server
-    		else {
-    			message = String::from_str("2");
-    			message.push_str(String::from_char(1, (input.len() as u8) as char).as_slice());
-    			message.push_str(input.as_slice());
-    			write_message(message, stream.clone());
-    		}
-    	}
+	    	// user input loop
+	    	loop { 
 
-    	drop(stream);
+	    		// get user input
+	    		input = reader.read_line().ok().expect("Failed to read line.");
+				input = remove_end_newline_char(input);
+				
+	    		// if user input is "exit" then exit both the client and server process
+	    		if (input.as_slice() == "exit") {
+	    			println!("leaving");
+	    			message = String::from_str("0");
+	    			write_message(message, inputStream.clone());
+	    			break;
+	    		}
+
+	    		// else send a message to the server
+	    		else {
+	    			message = String::from_str("2");
+	    			message.push_str(String::from_char(1, (input.len() as u8) as char).as_slice());
+	    			message.push_str(input.as_slice());
+	    			write_message(message, inputStream.clone());
+	    		}
+	    	}
+
+	    	drop(inputStream);
+	    });
+
+		// start output loop
+		loop {
+
+			let mut text = "".to_string();
+
+    		let result = outputStream.read(&mut buf);
+			match result {
+				Ok(result) => {
+					let mut op = buf[0] as char;
+		    		if op == '3' {
+		    			stream.read(&mut buf);
+						for n in range(0u, buf[0] as uint) {
+							stream.read(&mut buf);
+							text.push(buf[0] as char);
+						}
+						println!("{}", text);
+					}
+					else { println!("invalid op code"); break; }
+				}
+				Err(e) => { break; }
+			}
+		}
     }
     // if op code is 1 login is failed and the client exits
     else if op == '2' {

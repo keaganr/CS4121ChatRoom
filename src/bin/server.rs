@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+use std::comm::Sender;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io;
 use std::str;
@@ -10,24 +12,58 @@ fn main() {
 
 	// start listen
 	let mut acceptor = listener.listen().unwrap();
-	
+
+	let stream_mut = Arc::new(Mutex::new(0u32));
+	let (in_tx, in_rx) = channel();
+	let close_tx = in_tx.clone();
+
+	let (stream_tx, stream_rx) = channel::<String>();
+
+	let mut stream_vec: Vec<TcpStream> = Vec::new();
+	let streams = Arc::new(Mutex::new(stream_vec));
+
+
+
+
+	// spawn a task to handle individual clients
 	let mut acceptor_clone = acceptor.clone();
+	let mut acceptor_streams = streams.clone();
 	spawn(proc() {
-		// accept connections and spawn tasks for each
 		for stream in acceptor_clone.incoming() {
 			match stream {
 				Err(e) => { 
 					println!("server stopping"); 
 					break; 
 				}
-				Ok(stream) => spawn(proc() {
-					println!("got client");
-					handle_client(stream);
-				})
+				Ok(stream) => {
+					let in_tx = in_tx.clone();
+					let mut stream_vec = acceptor_streams.lock();
+					(*stream_vec).push(stream.clone());
+					spawn(proc() {
+						println!("got client");
+						handle_client(stream, in_tx);
+					});
+				}
 			}
 		}
 	});
 	
+	// spawn task for receiving and sending messages to all clients
+	spawn(proc() {
+		loop {
+			let received = in_rx.recv();
+			if received.as_slice() == "exit" { break; }
+			let mut message = String::from_str("3");
+			message.push_str(received.as_slice());
+
+			let mut rec_vec = streams.lock();
+			for s in (*rec_vec).iter() {
+				write_message(message.clone(), s.clone());
+			}
+		}
+	});
+
+	// allow user input for exit
 	let mut line = io::stdin().read_line().ok().unwrap();
 	line = remove_end_newline_char(line);
 	while line.to_string() != "exit".to_string() {
@@ -35,10 +71,9 @@ fn main() {
 		line = remove_end_newline_char(line);
 	}
 	
-	// close the socket server
+	// drop the Sender end of the channel and close the socket server
+	close_tx.send("exit".to_string());
 	acceptor.close_accept();
-	
-	//TODO: send exit message to all clients
 }
 
 fn remove_end_newline_char(message : String) -> String {
@@ -52,7 +87,7 @@ fn remove_end_newline_char(message : String) -> String {
 }
 
 // handle the spawned client task
-fn handle_client(mut stream: TcpStream) {
+fn handle_client(mut stream: TcpStream, mut tx: std::comm::Sender<String>) {
 
     let mut buf = [1u8];
     let mut user = "".to_string();
@@ -77,7 +112,7 @@ fn handle_client(mut stream: TcpStream) {
 	    		break;
 	    	}
 	    }
-	    else if op == '2' { send_all(user.clone(), stream.clone()); }
+	    else if op == '2' { send_all(user.clone(), stream.clone(), tx.clone()); }
 	    else if op == '3' { send_hist(); }
 	    else if op == '4' { announce(); }
 	    else { println!("invalid op code"); break; }
@@ -127,17 +162,18 @@ fn login(mut stream: TcpStream) -> String {
 }
 
 // SOP2: send_all
-fn send_all(user: String, mut stream: TcpStream) {
+fn send_all(user: String, mut stream: TcpStream, mut tx: std::comm::Sender<String>) {
 	let mut buf = [1u8];
 	let mut text = "".to_string();
 
 	stream.read(&mut buf);
+	text.push(buf[0] as char);
 	for n in range(0u, buf[0] as uint) {
 		stream.read(&mut buf);
 		text.push(buf[0] as char);
 	}
 
-	println!("got text: {}", text);
+	tx.send(text);
 
 	//TODO: implement sending received message to all clients
 	
