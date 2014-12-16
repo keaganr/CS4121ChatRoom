@@ -6,7 +6,11 @@ authors = ["keaganr <keaganr@gmail.com>"]
 
 [dependencies.mysql]
 git = "https://github.com/blackbeam/rust-mysql-simple.git"
+default-features = false
 
-[lib]
-name = "mysql_connector"
-path = "src/mysql_connector.rs"
+[dependencies.ncurses]
+git = "https://github.com/jeaye/ncurses-rs.git"
+
+[dependencies.rustbox]
+git = "https://github.com/gchp/rustbox.git"
+
