@@ -153,7 +153,8 @@ fn login(mut stream: TcpStream) -> String {
 
 	// test if user and pass are correct, if they are the user is returned,
 	// if they aren't an empty string is returned
-	if user.as_slice() == "user" && pass.as_slice() == "pass" { 
+	if (user.as_slice() == "user" && pass.as_slice() == "pass") || 
+	   (user.as_slice() == "user 2" && pass.as_slice() == "pass") { 
 		println!("acceptable credentials");
 		return user;
 
@@ -166,6 +167,12 @@ fn send_all(user: String, mut stream: TcpStream, mut tx: std::comm::Sender<Strin
 	let mut buf = [1u8];
 	let mut text = "".to_string();
 
+	text.push(((user.len()+2) as u8) as char);
+	for ch in user.chars() {
+		text.push(ch);
+	}
+	text.push_str(": ");
+
 	stream.read(&mut buf);
 	text.push(buf[0] as char);
 	for n in range(0u, buf[0] as uint) {
@@ -174,9 +181,6 @@ fn send_all(user: String, mut stream: TcpStream, mut tx: std::comm::Sender<Strin
 	}
 
 	tx.send(text);
-
-	//TODO: implement sending received message to all clients
-	
 }
 
 // SOP3: send_hist
