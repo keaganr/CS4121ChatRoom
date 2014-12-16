@@ -54,6 +54,8 @@ fn main() {
     // if op code is 1 login is successful and the client is moved on to the message loop
     if op == '1' {
 
+	    let input = Arc::new(Mutex::new("".to_string()));
+
     	// cloned resources used in both sendinng and receiving
     	let mut inputStream = stream.clone();
     	let mut outputStream = stream.clone();
@@ -61,6 +63,8 @@ fn main() {
     	let mut out_access = UI_access.clone();
     	let mut in_messages = messages.clone();
     	let mut out_messages = messages.clone();
+    	let mut in_input = input.clone();
+    	let mut out_input = input.clone();
 
     	
 
@@ -71,8 +75,9 @@ fn main() {
 		{
 			let mut messages = messages.lock();
 			messages.push("Welcome to the chatroom!".to_string());
-			messages.push("There is a 255 character limit on messages.".to_string());
+			messages.push("There is a 127 character limit on messages.".to_string());
 			messages.push("Press the escape key to exit.".to_string());
+			messages.push("".to_string());
 			ui_print_messages((*messages).iter());
 		}
 
@@ -80,11 +85,7 @@ fn main() {
 
     	// spawn input task
     	spawn(proc() {
-	    	let mut input = "".to_string();
 	    	let mut test = 1u16;
-
-	    	// required for using input inside and out of char::from_u32()
-	    	let input_mut = Arc::new(Mutex::new(input));
 
 	    	// user input loop
     		loop {
@@ -98,9 +99,6 @@ fn main() {
 		            	// aquire access to the UI
 		            	in_access.acquire();
     					{
-
-			            	let input_mut = input_mut.clone();
-
 			            	// if espcape key
 			            	if control == 27u16 {
 			            		let mut message = "0".to_string();
@@ -110,13 +108,13 @@ fn main() {
 
 			            	// if enter key
 			            	if control == 13u16 {
-			            		let mut input_mut = input_mut.lock();
+			            		let mut in_input = in_input.lock();
 			            		let mut message = "2".to_string();
 
-		    					message.push_str(String::from_char(1, ((*input_mut).len() as u8) as char).as_slice());
-		    					message.push_str((*input_mut).as_slice());
+		    					message.push_str(String::from_char(1, ((*in_input).len() as u8) as char).as_slice());
+		    					message.push_str((*in_input).as_slice());
 		    					write_message(message, inputStream.clone());
-				                (*input_mut) = "".to_string();
+				                (*in_input) = "".to_string();
 				                
 			                    rustbox::clear();
 			                    rustbox::present();
@@ -124,29 +122,31 @@ fn main() {
 
 			            	// if backspace key
 			            	if control == 127u16 {
-			            		let mut input_mut = input_mut.lock();
+			            		let mut in_input = in_input.lock();
 			            		let messages = in_messages.lock();
-				                (*input_mut).pop();
-				                let input = (*input_mut).as_slice();
+				                (*in_input).pop();
+				                let input = (*in_input).as_slice();
 
 			                    rustbox::clear();
 			                    ui_print_messages((*messages).iter());
-			                    rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Black, 
+			                    rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Default, 
 			                    			message_fit_to_window(input.to_string(), rustbox::width()));
 			                    rustbox::present();
 			            	}
 
 			            	// if spacebar
 			            	if control == 32u16 {
-			            		let mut input_mut = input_mut.lock();
+			            		let mut in_input = in_input.lock();
 			            		let messages = in_messages.lock();
 
-		                        (*input_mut).push(' ');
-		                        let input = (*input_mut).as_slice();
+			            		if (*in_input).len() < 127 {
+		                        	(*in_input).push(' ');
+			            		}
+		                        let input = (*in_input).as_slice();
 
 		                        rustbox::clear();
 		                        ui_print_messages((*messages).iter());
-		                        rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Black, 
+		                        rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Default, 
 		                        			message_fit_to_window(input.to_string(), rustbox::width()));
 		                    	rustbox::present();
 			            	}
@@ -156,15 +156,17 @@ fn main() {
 				                match char::from_u32(ch) {
 				                	Some('\x00') => {},
 				                    Some(c) => {
-				                    	let mut input_mut = input_mut.lock();
+				                    	let mut in_input = in_input.lock();
 				                    	let messages = in_messages.lock();
 
-				                        (*input_mut).push(c);
-				                        let input = (*input_mut).as_slice();
+				                        if (*in_input).len() < 127 {
+				                        	(*in_input).push(c);
+					            		}
+				                        let input = (*in_input).as_slice();
 
 		                        		rustbox::clear();
 		                        		ui_print_messages((*messages).iter());
-				                        rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Black, 
+				                        rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Default, 
 				                        		message_fit_to_window(input.to_string(), rustbox::width()));
 				                    	rustbox::present();
 				                    }
@@ -178,7 +180,10 @@ fn main() {
 		        }
 		    }
 		    rustbox::shutdown();
-		    println!("outta there");
+		    
+		    let mut message = "3".to_string();
+		    write_message(message, inputStream.clone());
+		    inputStream.close_read();
 
 	    	drop(inputStream);
 	    });
@@ -206,7 +211,14 @@ fn main() {
 							text.push(buf[0] as char);
 						}
 					}
-					else { println!("invalid op code"); break; }
+					else if op == '4' { 
+						rustbox::clear();
+						rustbox::print(0, 1, Style::Bold, Color::White, Color::Default,
+								"The server has been closed, please exit.".to_string());
+						rustbox::present();
+						break;
+					}
+					else { break; }
 				}
 
 				// if the result is an error, exit the input loop
@@ -222,10 +234,21 @@ fn main() {
 				(*messages).remove(0);
 				(*messages).push(text);
 			}
-			rustbox::clear();
-			ui_print_messages((*messages).iter());
-			rustbox::present();
+
+			// aquire access to the UI
+        	out_access.acquire();
+			{
+				rustbox::clear();
+				let mut out_input = out_input.lock();
+	            let input = (*out_input).as_slice();
+	            rustbox::print(0, rustbox::height() - 1, Style::Bold, Color::White, Color::Default, 
+	            		message_fit_to_window(input.to_string(), rustbox::width()));
+				ui_print_messages((*messages).iter());
+				rustbox::present();
+			}
+			out_access.release();
 		}
+
     }
 
     // if op code is 2 login is failed and the client exits
@@ -252,7 +275,7 @@ fn write_message(message : String, mut stream: TcpStream) {
 fn ui_print_messages(mut messages: core::slice::Items<String>) {
 	let mut i = 0;
 	for s in messages {
-		rustbox::print(0, i, Style::Bold, Color::White, Color::Black, s.as_slice().to_string());
+		rustbox::print(0, i, Style::Bold, Color::White, Color::Default, s.as_slice().to_string());
 		i = i+1;
 	}
 }

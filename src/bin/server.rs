@@ -23,16 +23,13 @@ fn main() {
 	let streams = Arc::new(Mutex::new(stream_vec));
 
 
-
-
 	// spawn a task to handle individual clients
 	let mut acceptor_clone = acceptor.clone();
 	let mut acceptor_streams = streams.clone();
 	spawn(proc() {
 		for stream in acceptor_clone.incoming() {
 			match stream {
-				Err(e) => { 
-					println!("server stopping"); 
+				Err(e) => {
 					break; 
 				}
 				Ok(stream) => {
@@ -40,7 +37,6 @@ fn main() {
 					let mut stream_vec = acceptor_streams.lock();
 					(*stream_vec).push(stream.clone());
 					spawn(proc() {
-						println!("got client");
 						handle_client(stream, in_tx);
 					});
 				}
@@ -48,15 +44,19 @@ fn main() {
 		}
 	});
 	
+
 	// spawn task for receiving and sending messages to all clients
+	let send_streams = streams.clone();
 	spawn(proc() {
 		loop {
 			let received = in_rx.recv();
-			if received.as_slice() == "exit" { break; }
+			if received.as_slice() == "exit" {
+				break;
+			}
 			let mut message = String::from_str("3");
 			message.push_str(received.as_slice());
 
-			let mut rec_vec = streams.lock();
+			let mut rec_vec = send_streams.lock();
 			for s in (*rec_vec).iter() {
 				write_message(message.clone(), s.clone());
 			}
@@ -64,15 +64,23 @@ fn main() {
 	});
 
 	// allow user input for exit
+	println!("Server started, enter \"exit\" to exit.")
 	let mut line = io::stdin().read_line().ok().unwrap();
 	line = remove_end_newline_char(line);
 	while line.to_string() != "exit".to_string() {
 		line = io::stdin().read_line().ok().unwrap();
 		line = remove_end_newline_char(line);
 	}
-	
-	// drop the Sender end of the channel and close the socket server
+
 	close_tx.send("exit".to_string());
+
+	let mut rec_vec = streams.lock();
+	for s in (*rec_vec).iter() {
+		let mut message = String::from_str("4");
+		write_message(message.clone(), s.clone());
+		drop(s);
+	}
+	
 	acceptor.close_accept();
 }
 
@@ -98,8 +106,6 @@ fn handle_client(mut stream: TcpStream, mut tx: std::comm::Sender<String>) {
     
     let mut op = buf[0] as char;
 
-    println!("op code: {}", op);
-
     // loop for client operations
     while op != '0' {
 	    if op == '1' {
@@ -113,9 +119,8 @@ fn handle_client(mut stream: TcpStream, mut tx: std::comm::Sender<String>) {
 	    	}
 	    }
 	    else if op == '2' { send_all(user.clone(), stream.clone(), tx.clone()); }
-	    else if op == '3' { send_hist(); }
-	    else if op == '4' { announce(); }
-	    else { println!("invalid op code"); break; }
+	    else if op == '3' { break; }
+	    else { break; }
 
 	    // read new op code
     	stream.read(&mut buf);
@@ -123,7 +128,6 @@ fn handle_client(mut stream: TcpStream, mut tx: std::comm::Sender<String>) {
 	}
 
     drop(stream);
-    println!("exiting client task");
 }
 
 // SOP1: login
@@ -149,17 +153,14 @@ fn login(mut stream: TcpStream) -> String {
 		pass.push(buf[0] as char);
 	}
 
-	println!("start login, username: {} password: {}", user, pass);
-
 	// test if user and pass are correct, if they are the user is returned,
 	// if they aren't an empty string is returned
-	if (user.as_slice() == "user" && pass.as_slice() == "pass") || 
-	   (user.as_slice() == "user 2" && pass.as_slice() == "pass") { 
-		println!("acceptable credentials");
+	if (user.as_slice() == "user 1" && pass.as_slice() == "pass") || 
+	   (user.as_slice() == "user 2" && pass.as_slice() == "pass") ||
+	   (user.as_slice() == "user 3" && pass.as_slice() == "pass") { 
 		return user;
-
 	}
-	else {println!("failure!!!"); return "".to_string();}
+	else { return "".to_string(); }
 }
 
 // SOP2: send_all
@@ -183,22 +184,12 @@ fn send_all(user: String, mut stream: TcpStream, mut tx: std::comm::Sender<Strin
 	tx.send(text);
 }
 
-// SOP3: send_hist
-fn send_hist() {
-	println!("start send history");
-}
-
-// SOP4: announce
-fn announce() {
-	println!("start announce");
-}
-
 // function to pass a string message into a stream byte by byte
 fn write_message(message : String, mut stream: TcpStream) {
 	let bytes = message.into_bytes();
 	let mut buf = [1u8];
 
-	// pass message to server
+	// pass message to stream
 	for n in range(0u, bytes.len()) {
 		buf[0] = bytes[n];
 		stream.write(&buf);
