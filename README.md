@@ -3,6 +3,13 @@ CS4121ChatRoom
 
 Rust implementation of a basic server / client chat room for CS4121.
 
+Authors:
+
+Jason Elston
+Keagan Rasmussen
+Zhitao Qiu
+Jonathan Pentis
+
 Server Functionality:
 
 Simply start the server and it will immediately begin waiting for
