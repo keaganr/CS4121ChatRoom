@@ -1,0 +1,54 @@
+[root]
+name = "ChatRoom"
+version = "0.0.1"
+dependencies = [
+ "mysql 0.2.2 (git+https://github.com/blackbeam/rust-mysql-simple.git)",
+ "ncurses 5.71.1 (git+https://github.com/jeaye/ncurses-rs.git)",
+ "rustbox 0.1.0 (git+https://github.com/gchp/rustbox.git)",
+]
+
+[[package]]
+name = "gcc"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "lazy_static"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "mysql"
+version = "0.2.2"
+source = "git+https://github.com/blackbeam/rust-mysql-simple.git#0dcb0b7ff77553533a3720bd5e0603f311701ddd"
+dependencies = [
+ "lazy_static 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "ncurses"
+version = "5.71.1"
+source = "git+https://github.com/jeaye/ncurses-rs.git#959ea20cababc15ee7886454eb123319859f164f"
+
+[[package]]
+name = "rustbox"
+version = "0.1.0"
+source = "git+https://github.com/gchp/rustbox.git#9f6ca3c60c9294c8eafcb7198355bc4c98ae7286"
+dependencies = [
+ "termbox-sys 0.0.1 (git+https://github.com/gchp/rustbox.git)",
+]
+
+[[package]]
+name = "termbox-sys"
+version = "0.0.1"
+source = "git+https://github.com/gchp/rustbox.git#9f6ca3c60c9294c8eafcb7198355bc4c98ae7286"
+
+[[package]]
+name = "time"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "gcc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
