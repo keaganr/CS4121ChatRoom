@@ -1,11 +1,18 @@
+extern crate mysql_connector;
+extern crate mysql;
+
 use std::sync::{Arc, Mutex};
 use std::comm::Sender;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io;
 use std::str;
+use mysql::conn::pool::{MyPool};
+
 
 
 fn main() {
+	// create pool to be used for mysql connection
+	// let pool = mysql_connector::init_db_conn();
 
 	// create listener and bind it
 	let listener = TcpListener::bind("127.0.0.1:8080");
@@ -155,11 +162,18 @@ fn login(mut stream: TcpStream) -> String {
 
 	// test if user and pass are correct, if they are the user is returned,
 	// if they aren't an empty string is returned
+	let pool = mysql_connector::init_db_conn();
+
 	if (user.as_slice() == "user 1" && pass.as_slice() == "pass") || 
 	   (user.as_slice() == "user 2" && pass.as_slice() == "pass") ||
 	   (user.as_slice() == "user 3" && pass.as_slice() == "pass") { 
 		return user;
 	}
+
+	else if (mysql_connector::authenticate(pool.clone(), user.clone(), pass.clone())) {
+		return user;
+	}
+
 	else { return "".to_string(); }
 }
 

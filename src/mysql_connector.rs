@@ -56,19 +56,14 @@ pub fn init_db_conn() -> mysql::conn::pool::MyPool {
 #[allow(unused_variable)]
 pub fn authenticate(pool: mysql::conn::pool::MyPool, username: String, password: String) -> bool {
 
-	// build string
-	let statement = "SELECT * FROM user WHERE username='".to_string() + username + "' and password='".to_string() + password + "';".to_string();
+	let statement = "SELECT * FROM user WHERE username='".to_string() + username.as_slice() + "' and password='" + password.as_slice() + "';";
 
-	// execute and parse through query
-	let mut found_flag = false;
-	let _ = pool.prepare(statement.as_slice())
-	.and_then(|mut stmt| {
-		for row in &mut stmt.execute([]) {
-			// row exists: means a db row match was found
-			found_flag = true;
-		}
-		Ok(())
-	});
+	let mut result = pool.query(statement.as_slice()).unwrap();
+
+	let mut found_flag = true;
+	if (result.next() == None) {
+		found_flag = false;
+	}
 
 	// return credential match results
 	return found_flag;
@@ -113,20 +108,16 @@ pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: Str
  */
  pub fn get_uid(pool: mysql::conn::pool::MyPool, username: String)  -> int {
 
- 	// create sql statement
- 	let statement = "SELECT * FROM user WHERE username='".to_string() + username + "';".to_string();
+ 	// // create sql statement
+ 	let statement = "SELECT * FROM user WHERE username='" + username + "';";
 
- 	// execute and parse through query to find matching uid
+ 	// // execute and parse through query to find matching uid
  	let mut found_id : int = 0;
- 	let _ = pool.prepare(statement.as_slice()) 
- 	.and_then(|mut stmt| {
- 		for row in &mut stmt.execute([]) {
- 			let row = row.unwrap();
- 			found_id = from_value(&row[0]);
- 			println!("uid = {}", found_id);
- 		}
- 		Ok(())
- 	});
+
+ 	let mut res = pool.query(statement.as_slice()).unwrap();
+ 	let row = res.next().unwrap().unwrap();
+ 	found_id = from_value(&row[0]);
+
  	return found_id;
  }
 
@@ -137,28 +128,40 @@ pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: Str
   	//select * from messages order by time limit 3;
 
  	// create sql statement
- 	let statement = "SELECT * FROM messages ORDER BY time LIMIT ".to_string() + count.to_string() + ";".to_string();
+ 	// let statement = "SELECT * FROM messages ORDER BY time LIMIT ".to_string() + count.to_string() + ";".to_string();
 
- 	// build list of messages
+ 	// // build list of messages
  	let mut msg_vec : Vec<Message> = Vec::new();
- 	let _ = pool.prepare(statement.as_slice())
- 	.and_then(|mut stmt| {
- 		for row in &mut stmt.execute([]) {
- 			let row = row.unwrap();
+ 	return msg_vec;
+ 	// let mut res = pool.query(statement.as_slice()).unwrap();
+ 	// let row = res.next().unwrap().unwrap();
+ 	// let mut new_message = Message { 
+ 	// 	userid: from_value(&row[1]),
+ 	// 	message: from_value(&row[2]),
+ 	// 	time_sent: from_value(&row[3])
+ 	// };
+ 	// println!("{}", new_message.message);
 
- 			// create individual message
- 			let mut new_message = Message {
- 				userid: from_value(&row[1]),
- 				message: from_value(&row[2]),
- 				time_sent: from_value(&row[3])
- 			};
- 			msg_vec.push(new_message);
- 		}
- 		Ok(())
- 	});
+ 	// println("{}", row.next());
+
+ 	// let _ = pool.prepare(statement.as_slice())
+ 	// .and_then(|mut stmt| {
+ 	// 	for row in &mut stmt.execute([]) {
+ 	// 		let row = row.unwrap();
+
+ 	// 		// create individual message
+ 	// 		let mut new_message = Message {
+ 	// 			userid: from_value(&row[1]),
+ 	// 			message: from_value(&row[2]),
+ 	// 			time_sent: from_value(&row[3])
+ 	// 		};
+ 	// 		msg_vec.push(new_message);
+ 	// 	}
+ 	// 	Ok(())
+ 	// });
 
  	// return message vector (list)
- 	return msg_vec;
+ 	// return msg_vec;
  }
 
 

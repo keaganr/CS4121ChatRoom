@@ -1,5 +1,6 @@
 extern crate rustbox;
 extern crate core;
+
 use std::sync::{Arc, Semaphore, Mutex};
 use std::io::TcpStream;
 use std::io;
