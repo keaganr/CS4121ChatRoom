@@ -74,7 +74,7 @@ pub fn authenticate(pool: mysql::conn::pool::MyPool, username: String, password:
 * Creates a new user entry in the database with given credentials
 */
 #[allow(unused_must_use)]
-pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: String) {
+pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: String)  -> bool{
 
 	let new_user = User {
 		username: username,
@@ -87,7 +87,7 @@ pub fn add_user(pool: mysql::conn::pool::MyPool, username: String, password: Str
 	.and_then(|mut stmt| {
 		stmt.execute(&[&new_user.username, &new_user.password]).and(Ok(()))
 	});
-
+	return true;
 }
 
 
