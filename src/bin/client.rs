@@ -90,7 +90,7 @@ fn main() {
 				rustbox::present();
 
 		    	// spawn input task
-		    	spawn(proc() {
+		    	spawn(move || {
 			    	let mut test = 1u16;
 
 			    	// user input loop

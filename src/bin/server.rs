@@ -26,7 +26,7 @@ fn main() {
 	// spawn a task to handle individual clients
 	let mut acceptor_clone = acceptor.clone();
 	let mut acceptor_streams = streams.clone();
-	spawn(proc() {
+	spawn(move || {
 		for stream in acceptor_clone.incoming() {
 			match stream {
 				Err(e) => {
@@ -36,7 +36,7 @@ fn main() {
 					let in_tx = in_tx.clone();
 					let mut stream_vec = acceptor_streams.lock();
 					(*stream_vec).push(stream.clone());
-					spawn(proc() {
+					spawn(move || {
 						handle_client(stream, in_tx);
 					});
 				}
@@ -47,7 +47,7 @@ fn main() {
 
 	// spawn task for receiving and sending messages to all clients
 	let send_streams = streams.clone();
-	spawn(proc() {
+	spawn(move || {
 		loop {
 			let received = in_rx.recv();
 			if received.as_slice() == "exit" {
