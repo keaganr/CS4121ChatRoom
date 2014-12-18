@@ -28,7 +28,7 @@ fn main() {
 		Ok(s) => { 
 			stream = s;
 
-			println!("Welcome! Type 'create' to make an account. Enter 'login' to continue to enter your informaion.");
+			println!("Welcome to the Rust Chatroom Client!\nAvailable commands to enter are:\n'create' - register an account\n'login'  - input credentials and access the chat room");
 			let mut option = reader.read_line().ok().expect("Failed to read line.");
 			option = remove_end_newline_char(option);
 
